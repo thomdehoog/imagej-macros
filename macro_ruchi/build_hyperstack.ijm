@@ -1,59 +1,105 @@
 // Build Hyperstack from w/z TIF tiles
-// Expects filenames like: *_w{W}_z{Z}.tif
-// Stacks as: 4 channels (w0-w3), 6 z-slices (z0-z5), 1 timepoint
-
-numC = 4;
-numZ = 6;
-numT = 1;
+// Infers channels (w), z-slices (z), and sites (s) from filenames
+// Supports patterns: *_w{W}_z{Z}.tif or *_s{S}_w{W}_z{Z}.tif
 
 dir = getDirectory("Select folder containing the TIF files");
-
-// Get a file list and find the common prefix (everything before _w)
 list = getFileList(dir);
+
+// --- Extract a numeric index following a tag like "_w", "_z", "_s" ---
+// Returns -1 if the tag is not found in the filename.
+function extractIndex(filename, tag) {
+    pos = indexOf(filename, tag);
+    if (pos < 0) return -1;
+    start = pos + lengthOf(tag);
+    end = start;
+    while (end < lengthOf(filename) && charCodeAt(filename, end) >= 48 && charCodeAt(filename, end) <= 57)
+        end++;
+    if (end == start) return -1;
+    return parseInt(substring(filename, start, end));
+}
+
+// --- Scan filenames to find prefix, max w/z/s indices, and whether _s is present ---
 prefix = "";
+maxW = -1;
+maxZ = -1;
+maxS = -1;
+hasSites = false;
+
 for (i = 0; i < list.length; i++) {
-    if (endsWith(list[i], ".tif")) {
-        idx = indexOf(list[i], "_w");
-        if (idx > 0) {
-            prefix = substring(list[i], 0, idx);
-            break;
-        }
+    if (!endsWith(list[i], ".tif")) continue;
+    w = extractIndex(list[i], "_w");
+    z = extractIndex(list[i], "_z");
+    if (w < 0 || z < 0) continue;
+
+    // Determine prefix on the first matching file
+    if (prefix == "") {
+        // Prefix is everything before _s (if present) or _w
+        sIdx = indexOf(list[i], "_s");
+        wIdx = indexOf(list[i], "_w");
+        if (sIdx >= 0 && sIdx < wIdx)
+            prefix = substring(list[i], 0, sIdx);
+        else
+            prefix = substring(list[i], 0, wIdx);
+    }
+
+    if (w > maxW) maxW = w;
+    if (z > maxZ) maxZ = z;
+
+    s = extractIndex(list[i], "_s");
+    if (s >= 0) {
+        hasSites = true;
+        if (s > maxS) maxS = s;
     }
 }
 
-if (prefix == "") {
+if (prefix == "" || maxW < 0 || maxZ < 0)
     exit("Could not find TIF files matching the expected pattern (*_w*_z*.tif)");
-}
+
+// Indices are 0-based → count = max + 1
+numC = maxW + 1;
+numZ = maxZ + 1;
+numS = 1;
+if (hasSites) numS = maxS + 1;
 
 print("Found prefix: " + prefix);
-print("Building hyperstack: " + numC + "C x " + numZ + "Z x " + numT + "T");
+print("Detected: " + numC + " channels, " + numZ + " z-slices, " + numS + " sites");
 
-// Open images: w outer, z inner — matches alphabetical sort by filename
-// Stack order: w0z0, w0z1, ..., w0z5, w1z0, ..., w3z5
-// z (slice) varies fastest → use xyzct order for hyperstack
+// --- Build one hyperstack per site ---
+// z varies fastest → xyzct order for hyperstack
 setBatchMode(true);
 
-for (w = 0; w < numC; w++) {
-    for (z = 0; z < numZ; z++) {
-        filename = prefix + "_w" + w + "_z" + z + ".tif";
-        filepath = dir + filename;
-        if (!File.exists(filepath)) {
-            exit("Missing file: " + filename);
+for (s = 0; s < numS; s++) {
+    for (w = 0; w < numC; w++) {
+        for (z = 0; z < numZ; z++) {
+            if (hasSites)
+                filename = prefix + "_s" + s + "_w" + w + "_z" + z + ".tif";
+            else
+                filename = prefix + "_w" + w + "_z" + z + ".tif";
+            filepath = dir + filename;
+            if (!File.exists(filepath))
+                exit("Missing file: " + filename);
+            open(filepath);
         }
-        open(filepath);
     }
+
+    run("Images to Stack", "use");
+
+    run("Stack to Hyperstack...",
+        "order=xyzct channels=" + numC +
+        " slices=" + numZ +
+        " frames=1" +
+        " display=Composite");
+
+    if (hasSites)
+        rename(prefix + "_s" + s);
+
+    // Show the finished hyperstack so it's excluded from the next
+    // "Images to Stack" call (which only operates on hidden images)
+    setBatchMode("show");
+
+    print("Site " + s + " done.");
 }
-
-// Combine all open images into a single stack
-run("Images to Stack", "use");
-
-// Convert to hyperstack — xyzct because slices vary fastest in our stack
-run("Stack to Hyperstack...", 
-    "order=xyzct channels=" + numC + 
-    " slices=" + numZ + 
-    " frames=" + numT + 
-    " display=Composite");
 
 setBatchMode(false);
 
-print("Done — hyperstack created.");
+print("Done — " + numS + " hyperstack(s) created.");
