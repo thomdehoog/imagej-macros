@@ -5,16 +5,30 @@
 dir = getDirectory("Select folder containing the TIF files");
 list = getFileList(dir);
 
+// --- Find position of a tag (e.g. "_s") that is followed by a digit ---
+// Skips false matches like "_s" inside "_seeding". Returns -1 if not found.
+function findTagPos(filename, tag) {
+    from = 0;
+    while (from < lengthOf(filename)) {
+        idx = indexOf(filename, tag, from);
+        if (idx < 0) return -1;
+        next = idx + lengthOf(tag);
+        if (next < lengthOf(filename) && charCodeAt(filename, next) >= 48 && charCodeAt(filename, next) <= 57)
+            return idx;
+        from = idx + 1;
+    }
+    return -1;
+}
+
 // --- Extract a numeric index following a tag like "_w", "_z", "_s" ---
-// Returns -1 if the tag is not found in the filename.
+// Returns -1 if the tag (followed by a digit) is not found in the filename.
 function extractIndex(filename, tag) {
-    pos = indexOf(filename, tag);
+    pos = findTagPos(filename, tag);
     if (pos < 0) return -1;
     start = pos + lengthOf(tag);
     end = start;
     while (end < lengthOf(filename) && charCodeAt(filename, end) >= 48 && charCodeAt(filename, end) <= 57)
         end++;
-    if (end == start) return -1;
     return parseInt(substring(filename, start, end));
 }
 
@@ -33,9 +47,8 @@ for (i = 0; i < list.length; i++) {
 
     // Determine prefix on the first matching file
     if (prefix == "") {
-        // Prefix is everything before _s (if present) or _w
-        sIdx = indexOf(list[i], "_s");
-        wIdx = indexOf(list[i], "_w");
+        sIdx = findTagPos(list[i], "_s");
+        wIdx = findTagPos(list[i], "_w");
         if (sIdx >= 0 && sIdx < wIdx)
             prefix = substring(list[i], 0, sIdx);
         else
