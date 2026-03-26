@@ -74,10 +74,17 @@ numZ = maxZ + 1;
 numS = 1;
 if (hasSites) numS = maxS + 1;
 
+// --- Create output folder: <input folder>_hyperstacks ---
+// Strip trailing separator from dir, append _hyperstacks
+outDir = substring(dir, 0, lengthOf(dir) - 1) + "_hyperstacks" + File.separator;
+if (!File.isDirectory(outDir))
+    File.makeDirectory(outDir);
+
 print("Found prefix: " + prefix);
 print("Detected: " + numC + " channels, " + numZ + " z-slices, " + numS + " sites");
+print("Saving to: " + outDir);
 
-// --- Build one hyperstack per site ---
+// --- Build one hyperstack per site, save, and close ---
 // z varies fastest → xyzct order for hyperstack
 setBatchMode(true);
 
@@ -104,15 +111,16 @@ for (s = 0; s < numS; s++) {
         " display=Composite");
 
     if (hasSites)
-        rename(prefix + "_s" + s);
+        saveName = prefix + "_s" + s;
+    else
+        saveName = prefix;
 
-    // Show the finished hyperstack so it's excluded from the next
-    // "Images to Stack" call (which only operates on hidden images)
-    setBatchMode("show");
+    saveAs("Tiff", outDir + saveName + ".tif");
+    close();
 
-    print("Site " + s + " done.");
+    print("Site " + s + " saved and closed.");
 }
 
 setBatchMode(false);
 
-print("Done — " + numS + " hyperstack(s) created.");
+print("Done — " + numS + " hyperstack(s) saved to " + outDir);
