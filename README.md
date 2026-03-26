@@ -6,4 +6,4 @@ Collection of ImageJ/Fiji macros for microscopy image processing.
 
 | Folder | Description |
 |--------|-------------|
-| [macro_ruchi](macro_ruchi/) | Build hyperstacks from LAS X TIF tiles |
+| [macro_ruchi](macro_ruchi/) | Build hyperstacks from MD ImageXpress HCS TIF tiles |

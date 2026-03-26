@@ -4,7 +4,7 @@ Collection of ImageJ/Fiji macros for microscopy image processing.
 
 ## macro_ruchi/build_hyperstack.ijm
 
-Assembles individual TIF tiles exported by LAS X into multi-channel, z-stack hyperstacks.
+Assembles individual TIF tiles exported by Molecular Devices ImageXpress (MD HCS) into multi-channel, z-stack hyperstacks.
 
 ### What it does
 
