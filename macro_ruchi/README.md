@@ -14,7 +14,7 @@ Assembles individual TIF tiles exported by Molecular Devices ImageXpress (MD HCS
    - Number of **z-slices** (`_z0`, `_z1`, ...)
    - Number of **sites** (`_s0`, `_s1`, ...) if present
 3. Builds one composite hyperstack per site
-4. Saves each hyperstack as a TIF in a new folder next to the input folder (e.g. `E10/` -> `E10_hyperstacks/`)
+4. Saves each hyperstack as a TIF in a new folder next to the input folder (e.g. `Mock/` -> `Mock_hyperstacks/`)
 5. Closes each hyperstack after saving to keep memory usage low
 
 ### Expected filename patterns
@@ -26,8 +26,8 @@ Assembles individual TIF tiles exported by Molecular Devices ImageXpress (MD HCS
 
 Examples:
 ```
-Ngn2_seeding resistance_p62_t0_E10_s0_w0_z0.tif
-10527_60x_targets_t0_B09_s4_w3_z5.tif
+exp1_t0_E10_s0_w0_z0.tif
+mock_60x_targets_t0_B09_s4_w3_z5.tif
 ```
 
 Tags like `_w`, `_z`, `_s` must be followed by a digit. Occurrences within words (e.g. `_s` in `_seeding`) are ignored.
@@ -46,8 +46,8 @@ Non-TIF files in the folder (e.g. `.json`) are ignored.
 Hyperstacks are saved as TIF files in `<input_folder>_hyperstacks/`:
 
 ```
-E10_hyperstacks/
-  Ngn2_seeding resistance_p62_t0_E10_s0.tif
+Mock_hyperstacks/
+  exp1_t0_E10_s0.tif
 ```
 
 If there are no sites, the output filename matches the prefix:
