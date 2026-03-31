@@ -38,14 +38,21 @@ function extractIndex(filename, tag) {
     return parseInt(substring(filename, start, end));
 }
 
+var _groupKey = "";
+
 function extractGroupKey(filename) {
     sPos = findTagPos(filename, "_s");
     wPos = findTagPos(filename, "_w");
-    if (sPos >= 0 && (wPos < 0 || sPos < wPos))
-        return substring(filename, 0, sPos);
-    if (wPos >= 0)
-        return substring(filename, 0, wPos);
-    return "";
+    if (sPos >= 0 && (wPos < 0 || sPos < wPos)) {
+        _groupKey = substring(filename, 0, sPos);
+        return 1;
+    }
+    if (wPos >= 0) {
+        _groupKey = substring(filename, 0, wPos);
+        return 1;
+    }
+    _groupKey = "";
+    return 0;
 }
 
 // --- Find timepoint subfolders ---
@@ -87,7 +94,8 @@ for (tp = 0; tp < numTP; tp++) {
         if (!endsWith(list[i], ".tif")) continue;
         if (extractIndex(list[i], "_w") < 0) continue;
         if (extractIndex(list[i], "_z") < 0) continue;
-        key = extractGroupKey(list[i]);
+        extractGroupKey(list[i]);
+        key = _groupKey;
         if (key == "") continue;
         found = false;
         for (g = 0; g < maxKeys; g++) {
@@ -117,7 +125,8 @@ for (tp = 0; tp < numTP; tp++) {
 
         for (i = 0; i < list.length; i++) {
             if (!endsWith(list[i], ".tif")) continue;
-            if (extractGroupKey(list[i]) != key) continue;
+            extractGroupKey(list[i]);
+            if (_groupKey != key) continue;
             w = extractIndex(list[i], "_w");
             z = extractIndex(list[i], "_z");
             if (w < 0 || z < 0) continue;
