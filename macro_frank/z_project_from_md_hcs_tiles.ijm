@@ -1,15 +1,14 @@
-// Z-Project from MD ImageXpress z-stack tiles (multi-well)
+// Z-Project from MD ImageXpress z-stack tiles (multi-well, multi-timepoint)
 // Builds hyperstack per well+site, max-intensity z-projects, saves projection
-// Input:  select the timepoint folder (e.g. experiment_z_stack/timepoint0/)
+// Input:  select the experiment_z_stack folder
 // Output: experiment_z_projection/ created next to experiment_z_stack/
+//         one MIP per timepoint × well × site
 
-dir = getDirectory("Select the folder containing the z-stack TIF tiles");
-list = getFileList(dir);
+experimentDir = getDirectory("Select the experiment_z_stack folder");
 
-// --- Output folder: ../../experiment_z_projection/ ---
-dirTrimmed = substring(dir, 0, lengthOf(dir) - 1);
-parentPath = File.getParent(dirTrimmed);
-sessionPath = File.getParent(parentPath);
+// --- Output folder: ../experiment_z_projection/ ---
+expTrimmed = substring(experimentDir, 0, lengthOf(experimentDir) - 1);
+sessionPath = File.getParent(expTrimmed);
 outDir = sessionPath + File.separator + "experiment_z_projection" + File.separator;
 if (!File.isDirectory(outDir))
     File.makeDirectory(outDir);
@@ -49,101 +48,130 @@ function extractGroupKey(filename) {
     return "";
 }
 
-// --- Collect unique group keys (one per well) ---
-maxKeys = 0;
-tempKeys = newArray(1000);
-for (i = 0; i < list.length; i++) {
-    if (!endsWith(list[i], ".tif")) continue;
-    if (extractIndex(list[i], "_w") < 0) continue;
-    if (extractIndex(list[i], "_z") < 0) continue;
-    key = extractGroupKey(list[i]);
-    if (key == "") continue;
-    found = false;
-    for (g = 0; g < maxKeys; g++) {
-        if (tempKeys[g] == key) found = true;
-    }
-    if (!found) {
-        tempKeys[maxKeys] = key;
-        maxKeys++;
+// --- Find timepoint subfolders ---
+expContents = getFileList(experimentDir);
+numTP = 0;
+tpDirs = newArray(1000);
+tpNames = newArray(1000);
+for (i = 0; i < expContents.length; i++) {
+    if (startsWith(expContents[i], "timepoint") && endsWith(expContents[i], "/")) {
+        tpNames[numTP] = replace(expContents[i], "/", "");
+        tpDirs[numTP] = experimentDir + expContents[i];
+        numTP++;
     }
 }
 
-if (maxKeys == 0)
-    exit("No TIF files matching the expected pattern (*_w*_z*.tif) found.");
+if (numTP == 0)
+    exit("No timepoint folders found in " + experimentDir);
 
-keys = Array.trim(tempKeys, maxKeys);
-Array.sort(keys);
+tpDirs = Array.trim(tpDirs, numTP);
+tpNames = Array.trim(tpNames, numTP);
+Array.sort(tpNames);
+Array.sort(tpDirs);
 
-print("Found " + keys.length + " group(s):");
-for (k = 0; k < keys.length; k++)
-    print("  " + keys[k]);
+print("Found " + numTP + " timepoint(s)");
 print("Output: " + outDir);
 
-// --- Process each group: build hyperstack, z-project, save ---
+// --- Process each timepoint ---
 setBatchMode(true);
 
-for (k = 0; k < keys.length; k++) {
-    key = keys[k];
-    maxW = -1;
-    maxZ = -1;
-    maxS = -1;
-    hasSites = false;
+for (tp = 0; tp < numTP; tp++) {
+    dir = tpDirs[tp];
+    list = getFileList(dir);
+    print("Processing " + tpNames[tp] + " (" + list.length + " files)...");
 
+    // Collect unique group keys (one per well)
+    maxKeys = 0;
+    tempKeys = newArray(1000);
     for (i = 0; i < list.length; i++) {
         if (!endsWith(list[i], ".tif")) continue;
-        if (extractGroupKey(list[i]) != key) continue;
-        w = extractIndex(list[i], "_w");
-        z = extractIndex(list[i], "_z");
-        if (w < 0 || z < 0) continue;
-        if (w > maxW) maxW = w;
-        if (z > maxZ) maxZ = z;
-        s = extractIndex(list[i], "_s");
-        if (s >= 0) {
-            hasSites = true;
-            if (s > maxS) maxS = s;
+        if (extractIndex(list[i], "_w") < 0) continue;
+        if (extractIndex(list[i], "_z") < 0) continue;
+        key = extractGroupKey(list[i]);
+        if (key == "") continue;
+        found = false;
+        for (g = 0; g < maxKeys; g++) {
+            if (tempKeys[g] == key) found = true;
+        }
+        if (!found) {
+            tempKeys[maxKeys] = key;
+            maxKeys++;
         }
     }
 
-    numC = maxW + 1;
-    numZ = maxZ + 1;
-    numS = 1;
-    if (hasSites) numS = maxS + 1;
+    if (maxKeys == 0) {
+        print("  No matching TIF files, skipping.");
+        continue;
+    }
 
-    for (s = 0; s < numS; s++) {
-        for (w = 0; w < numC; w++) {
-            for (z = 0; z < numZ; z++) {
-                if (hasSites)
-                    filename = key + "_s" + s + "_w" + w + "_z" + z + ".tif";
-                else
-                    filename = key + "_w" + w + "_z" + z + ".tif";
-                if (!File.exists(dir + filename))
-                    exit("Missing file: " + filename);
-                open(dir + filename);
+    keys = Array.trim(tempKeys, maxKeys);
+    Array.sort(keys);
+
+    // Process each well
+    for (k = 0; k < keys.length; k++) {
+        key = keys[k];
+        maxW = -1;
+        maxZ = -1;
+        maxS = -1;
+        hasSites = false;
+
+        for (i = 0; i < list.length; i++) {
+            if (!endsWith(list[i], ".tif")) continue;
+            if (extractGroupKey(list[i]) != key) continue;
+            w = extractIndex(list[i], "_w");
+            z = extractIndex(list[i], "_z");
+            if (w < 0 || z < 0) continue;
+            if (w > maxW) maxW = w;
+            if (z > maxZ) maxZ = z;
+            s = extractIndex(list[i], "_s");
+            if (s >= 0) {
+                hasSites = true;
+                if (s > maxS) maxS = s;
             }
         }
 
-        run("Images to Stack", "use");
-        run("Stack to Hyperstack...",
-            "order=xyzct channels=" + numC +
-            " slices=" + numZ +
-            " frames=1 display=Composite");
-        hsID = getImageID();
+        numC = maxW + 1;
+        numZ = maxZ + 1;
+        numS = 1;
+        if (hasSites) numS = maxS + 1;
 
-        run("Z Project...", "projection=[Max Intensity]");
+        // Process each site
+        for (s = 0; s < numS; s++) {
+            for (w = 0; w < numC; w++) {
+                for (z = 0; z < numZ; z++) {
+                    if (hasSites)
+                        filename = key + "_s" + s + "_w" + w + "_z" + z + ".tif";
+                    else
+                        filename = key + "_w" + w + "_z" + z + ".tif";
+                    if (!File.exists(dir + filename))
+                        exit("Missing file: " + filename + " in " + tpNames[tp]);
+                    open(dir + filename);
+                }
+            }
 
-        if (hasSites)
-            saveName = key + "_s" + s;
-        else
-            saveName = key;
-        saveAs("Tiff", outDir + saveName + ".tif");
-        close();
+            run("Images to Stack", "use");
+            run("Stack to Hyperstack...",
+                "order=xyzct channels=" + numC +
+                " slices=" + numZ +
+                " frames=1 display=Composite");
+            hsID = getImageID();
 
-        selectImage(hsID);
-        close();
+            run("Z Project...", "projection=[Max Intensity]");
 
-        print("  " + saveName + ".tif");
+            if (hasSites)
+                saveName = key + "_s" + s;
+            else
+                saveName = key;
+            saveAs("Tiff", outDir + saveName + ".tif");
+            close();
+
+            selectImage(hsID);
+            close();
+
+            print("  " + saveName + ".tif");
+        }
     }
 }
 
 setBatchMode(false);
-print("Done — " + keys.length + " group(s) projected to " + outDir);
+print("Done — projections saved to " + outDir);
