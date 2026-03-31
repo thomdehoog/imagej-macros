@@ -1,6 +1,6 @@
 # macro_frank
 
-## z_project_from_zstack_tiles.ijm
+## z_project_from_md_hcs_tiles.ijm
 
 Max-intensity Z-projects MD ImageXpress z-stack tiles into composite multi-channel TIFs, one per well+site.
 
@@ -34,5 +34,5 @@ Max-intensity Z-projects MD ImageXpress z-stack tiles into composite multi-chann
 
 1. Open Fiji
 2. **Plugins > Macros > Run...**
-3. Select `z_project_from_zstack_tiles.ijm`
+3. Select `z_project_from_md_hcs_tiles.ijm`
 4. Choose the `timepoint0` folder containing the TIF tiles
