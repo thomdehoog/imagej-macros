@@ -1,6 +1,21 @@
-// Build Hyperstack from w/z TIF tiles
-// Infers channels (w), z-slices (z), and sites (s) from filenames
-// Supports patterns: *_w{W}_z{Z}.tif or *_s{S}_w{W}_z{Z}.tif
+// ------------------------------------------------------------------------------
+// ImageJ Macro: Build Hyperstacks from MD ImageXpress TIF Tiles
+// Created: 2026-03-26 | Updated: 2026-03-26
+// Author: thom.dehoog@zmb.uzh.ch | ZMB Center for Microscopy and Image Analysis, UZH
+//
+// If you publish a paper using this macro, please acknowledge.
+//
+// Description: Assembles individual TIF tiles exported by Molecular Devices
+//   ImageXpress (MD HCS) into multi-channel, z-stack hyperstacks.
+//   - Infers channels (_w), z-slices (_z), and sites (_s) from filenames
+//   - Supports patterns: *_w{W}_z{Z}.tif and *_s{S}_w{W}_z{Z}.tif
+//   - Robust tag detection avoids false matches (e.g. "_s" in "_seeding")
+//   - Outputs one composite hyperstack TIFF per site
+//   - Runs in batch mode to minimise memory overhead
+//
+// Input:  Folder containing TIF tiles from a single plate/well acquisition
+// Output: <input folder>_hyperstacks/ with one hyperstack per site
+// ------------------------------------------------------------------------------
 
 dir = getDirectory("Select folder containing the TIF files");
 list = getFileList(dir);

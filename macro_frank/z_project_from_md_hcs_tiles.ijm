@@ -1,8 +1,21 @@
-// Z-Project from MD ImageXpress z-stack tiles (multi-well, multi-timepoint)
-// Builds hyperstack per well+site, max-intensity z-projects, saves projection
-// Input:  select the experiment_z_stack folder
-// Output: experiment_z_projection/ created next to experiment_z_stack/
-//         one MIP per timepoint × well × site
+// ------------------------------------------------------------------------------
+// ImageJ Macro: Z-Project MD ImageXpress Z-Stack Tiles
+// Created: 2026-03-31 | Updated: 2026-03-31
+// Author: thom.dehoog@zmb.uzh.ch | ZMB Center for Microscopy and Image Analysis, UZH
+//
+// If you publish a paper using this macro, please acknowledge.
+//
+// Description: Batch max-intensity Z-projects multi-well, multi-timepoint
+//   z-stack tiles exported by Molecular Devices ImageXpress (MD HCS).
+//   - Discovers timepoint subfolders automatically
+//   - Groups tiles by well and site from filename tags (_w, _z, _s)
+//   - Builds a temporary hyperstack per group, then max-intensity projects
+//   - Saves one composite MIP per timepoint, well, and site
+//   - Runs in batch mode to minimise memory overhead
+//
+// Input:  experiment_z_stack/ folder containing timepoint subfolders
+// Output: experiment_z_projection/ created alongside the input folder
+// ------------------------------------------------------------------------------
 
 experimentDir = getDirectory("Select the experiment_z_stack folder");
 
