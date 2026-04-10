@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------
-// ImageJ Macro: Z-Project MD ImageXpress Z-Stack Tiles
+// Fiji: z-project MD ImageXpress z-stack tiles
 // Created: 2026-03-31 | Updated: 2026-03-31
 // Author: thom.dehoog@zmb.uzh.ch | ZMB Center for Microscopy and Image Analysis, UZH
 //

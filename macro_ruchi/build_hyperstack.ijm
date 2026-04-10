@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------
-// ImageJ Macro: Build Hyperstacks from MD ImageXpress TIF Tiles
+// Fiji: build hyperstacks from MD ImageXpress TIF tiles
 // Created: 2026-03-26 | Updated: 2026-03-26
 // Author: thom.dehoog@zmb.uzh.ch | ZMB Center for Microscopy and Image Analysis, UZH
 //
